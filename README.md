@@ -1,7 +1,7 @@
 # Zadanie domowe #4
 ## GoIT moduł 2 web
 
-Twoim celem jest zaimplementowanie prostej aplikacji internetowej. Skorzystaj z poniższych plików jako podstawy.
+Twoim celem jest zaimplementowanie prostej aplikacji internetowej. Skorzystaj z [poniższych plików](https://drive.google.com/file/d/1WYxNO5ymmkH0yMY0cJUgtzE0rcKC1njP/view?usp=share_link) jako podstawy.
 
 Analogicznie do przykładu w konspekcie, stwórz aplikację internetową z routingiem dla dwóch stron html : index.html imessage.html.
 
