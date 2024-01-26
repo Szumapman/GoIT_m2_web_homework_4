@@ -101,7 +101,6 @@ def run_http_server(
     except KeyboardInterrupt:
         logging.debug(f"Destroy http server")
         http_server.server_close()
-        raise KeyboardInterrupt
 
 
 def main():
