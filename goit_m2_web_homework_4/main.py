@@ -28,7 +28,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         parse_result = urllib.parse.urlparse(self.path)
         if parse_result.path == "/":
             self.send_html_file("./templates/index.html")
-        elif parse_result.path == "/message":
+        elif parse_result.path == "/message.html":
             self.send_html_file("./templates/message.html")
         else:
             if Path().joinpath(parse_result.path[1:]).exists():
