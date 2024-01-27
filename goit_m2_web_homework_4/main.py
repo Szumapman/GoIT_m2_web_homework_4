@@ -10,9 +10,6 @@ import threading
 import logging
 
 
-APP_PATH = Path(__file__).parent.absolute()
-
-
 class HttpHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         data = self.rfile.read(int(self.headers["Content-Length"]))
@@ -30,15 +27,15 @@ class HttpHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parse_result = urllib.parse.urlparse(self.path)
         if parse_result.path == "/":
-            self.send_html_file(APP_PATH.joinpath("templates/index.html"))
+            self.send_html_file("templates/index.html")
         elif parse_result.path == "/message.html":
-            self.send_html_file(APP_PATH.joinpath("templates/message.html"))
+            self.send_html_file("templates/message.html")
         else:
-            if APP_PATH.joinpath(Path().joinpath(parse_result.path[1:])).exists():
+            if Path().joinpath(parse_result.path[1:]).exists():
                 self.send_static()
             else:
                 self.send_html_file(
-                    APP_PATH.joinpath("/templates/error.html"),
+                    "/templates/error.html",
                     404,
                 )
 
@@ -57,8 +54,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         else:
             self.send_header("Content-Type", "text/plain")
         self.end_headers()
-        static_path = str(APP_PATH) + self.path
-        with open(static_path, "rb") as file:
+        with open(f".{self.path}", "rb") as file:
             self.wfile.write(file.read())
 
 
@@ -84,7 +80,6 @@ def run_socket_server(ip, port, data_dict, data_path):
 
 def save_json_data(data_dict, data, data_path):
     data_dict[datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")] = json.loads(data)
-    logging.debug(f"data_dict: {data_dict}")
     with open(data_path, "w") as f:
         json.dump(data_dict, f)
 
@@ -112,10 +107,11 @@ def run_http_server(
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format="%(threadName)s %(message)s")
-    storage_path = Path(__file__).parent.absolute().joinpath("storage")
+    app_directory = Path(__file__).parent.absolute()
+    storage_path = app_directory.joinpath("storage")
     data_path = storage_path.joinpath("data.json")
     if not storage_path.exists():
-        Path.mkdir(Path(__file__).parent.absolute().joinpath("storage"))
+        Path.mkdir(storage_path)
     if not data_path.exists():
         Path.touch(data_path)
     if os.path.getsize(data_path) == 0:
