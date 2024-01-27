@@ -1,13 +1,11 @@
 FROM python:3.11-alpine
 
-WORKDIR /homework_4
+WORKDIR /app
 
 EXPOSE 3000
 
-COPY . .
+COPY ./goit_m2_web_homework_4 .
 
-VOLUME /homework_4/goit_m2_web_homework_4/storage/
+VOLUME /app/storage/
 
-RUN pip install -r requirements.txt
-
-ENTRYPOINT ["python", "goit_m2_web_homework_4/main.py", "--host", "0.0.0.0"]
+ENTRYPOINT ["python", "main.py", "--host", "0.0.0.0"]
