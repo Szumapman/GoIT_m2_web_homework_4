@@ -8,6 +8,7 @@ import socket
 import os
 import threading
 import logging
+from http import HTTPStatus
 
 
 class HttpHandler(BaseHTTPRequestHandler):
@@ -20,7 +21,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         }
         byte_data = json.dumps(data_dict).encode()
         run_socket_client("0.0.0.0", 5000, byte_data)
-        self.send_response(302)
+        self.send_response(HTTPStatus.FOUND)
         self.send_header("Location", "templates/index.html")
         self.end_headers()
 
@@ -36,10 +37,10 @@ class HttpHandler(BaseHTTPRequestHandler):
             else:
                 self.send_html_file(
                     "/templates/error.html",
-                    404,
+                    HTTPStatus.NOT_FOUND,
                 )
 
-    def send_html_file(self, filename, status_code=200):
+    def send_html_file(self, filename, status_code=HTTPStatus.OK):
         self.send_response(status_code)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
@@ -47,7 +48,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             self.wfile.write(f.read())
 
     def send_static(self):
-        self.send_response(200)
+        self.send_response(HTTPStatus.OK)
         mt = mimetypes.guess_type(self.path)
         if mt:
             self.send_header("Content-Type", mt[0])
@@ -105,24 +106,36 @@ def run_http_server(
         http_server.server_close()
 
 
+def set_data_directory():
+    app_directory = Path(__file__).parent.absolute()
+    storage_directory_path = app_directory.joinpath("storage")
+    if not storage_directory_path.exists():
+        Path.mkdir(storage_directory_path)
+    return storage_directory_path
+
+
+def set_data_dict(data_file):
+    if os.path.getsize(data_file) == 0:
+        return {}
+    with open(data_file, "r") as f:
+        return json.load(f)
+
+
+def set_data_file(storage_path):
+    data_file_path = storage_path.joinpath("data.json")
+    if not data_file_path.exists():
+        Path.touch(data_file_path)
+    return data_file_path
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG, format="%(threadName)s %(message)s")
-    app_directory = Path(__file__).parent.absolute()
-    storage_path = app_directory.joinpath("storage")
-    data_path = storage_path.joinpath("data.json")
-    if not storage_path.exists():
-        Path.mkdir(storage_path)
-    if not data_path.exists():
-        Path.touch(data_path)
-    if os.path.getsize(data_path) == 0:
-        data_dict = {}
-    else:
-        with open(data_path, "r") as f:
-            data_dict = json.load(f)
+    data_file = set_data_file(set_data_directory())
+    data_dict = set_data_dict(data_file)
     http_server = threading.Thread(target=run_http_server, daemon=True)
     socket_server = threading.Thread(
         target=run_socket_server,
-        args=("0.0.0.0", 5000, data_dict, data_path),
+        args=("0.0.0.0", 5000, data_dict, data_file),
         daemon=True,
     )
     socket_server.start()
