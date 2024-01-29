@@ -132,16 +132,21 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format="%(threadName)s %(message)s")
     data_file = set_data_file(set_data_directory())
     data_dict = set_data_dict(data_file)
-    http_server = threading.Thread(target=run_http_server, daemon=True)
-    socket_server = threading.Thread(
-        target=run_socket_server,
-        args=("0.0.0.0", 5000, data_dict, data_file),
-        daemon=True,
-    )
-    socket_server.start()
-    http_server.start()
-    socket_server.join()
-    http_server.join()
+    try:
+        http_server = threading.Thread(target=run_http_server, daemon=True)
+        socket_server = threading.Thread(
+            target=run_socket_server,
+            args=("0.0.0.0", 5000, data_dict, data_file),
+            daemon=True,
+        )
+        socket_server.start()
+        http_server.start()
+        lock = threading.Lock()
+        socket_server.join()
+        http_server.join()
+    except KeyboardInterrupt:
+        if lock.locked():
+            lock.release()
     logging.debug("Destroy all threads")
 
 
