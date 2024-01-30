@@ -68,14 +68,17 @@ def run_socket_server(ip, port, data_dict, data_path):
     try:
         while True:
             data, address = sock.recvfrom(1024)
+            logging.debug(f"Received data from {address}: {data}")
             if data == b"END_OF_FORM":
                 save_json_data(data_dict, data_to_save, data_path)
                 data_to_save = b""
+            elif data == b"STOP_SOCKET_SERVER":
+                logging.debug(f"Stop socket server {data}")
+                break
             else:
                 data_to_save += data
-    except KeyboardInterrupt:
-        logging.debug(f"Destroy socket server")
     finally:
+        logging.debug(f"Destroy socket server")
         sock.close()
 
 
@@ -93,17 +96,21 @@ def run_socket_client(host, port, data):
         sock.sendto(b"END_OF_FORM", (host, port))
 
 
-def run_http_server(
-    server_class=HTTPServer, handler_class=HttpHandler, ip="0.0.0.0", port=3000
-):
-    server_address = (ip, port)
-    http_server = server_class(server_address, handler_class)
+httpd = HTTPServer(("0.0.0.0", 3000), HttpHandler)
+
+
+def run_http_server():
+    # def run_http_server(
+    #     server_class=HTTPServer, handler_class=HttpHandler, ip="0.0.0.0", port=3000
+    # ):
+    # server_address = (ip, port)
     logging.debug("Starting httpd...")
+    # httpd = server_class(server_address, handler_class)
     try:
-        http_server.serve_forever()
-    except KeyboardInterrupt:
-        logging.debug(f"Destroy http server")
-        http_server.server_close()
+        httpd.serve_forever()
+    finally:
+        logging.debug(f"Destroy http server ")
+        httpd.server_close()
 
 
 def set_data_directory():
@@ -132,22 +139,24 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format="%(threadName)s %(message)s")
     data_file = set_data_file(set_data_directory())
     data_dict = set_data_dict(data_file)
+    http_server = threading.Thread(target=run_http_server, daemon=True)
+    socket_server = threading.Thread(
+        target=run_socket_server,
+        args=("0.0.0.0", 5000, data_dict, data_file),
+        daemon=True,
+    )
     try:
-        http_server = threading.Thread(target=run_http_server, daemon=True)
-        socket_server = threading.Thread(
-            target=run_socket_server,
-            args=("0.0.0.0", 5000, data_dict, data_file),
-            daemon=True,
-        )
         socket_server.start()
         http_server.start()
-        lock = threading.Lock()
         socket_server.join()
         http_server.join()
     except KeyboardInterrupt:
-        if lock.locked():
-            lock.release()
-    logging.debug("Destroy all threads")
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.sendto(b"STOP_SOCKET_SERVER", ("0.0.0.0", 5000))
+            httpd.shutdown()
+        logging.debug("Destroy all threads")
+        logging.debug(f"socket alive? {socket_server.is_alive()}")
+        logging.debug(f"http alive? {http_server.is_alive()}")
 
 
 if __name__ == "__main__":
