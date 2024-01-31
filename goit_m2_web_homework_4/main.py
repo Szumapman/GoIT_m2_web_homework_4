@@ -96,10 +96,7 @@ def run_socket_client(host, port, data):
         sock.sendto(b"END_OF_FORM", (host, port))
 
 
-httpd = HTTPServer(("0.0.0.0", 3000), HttpHandler)
-
-
-def run_http_server():
+def run_http_server(httpd: HTTPServer):
     # def run_http_server(
     #     server_class=HTTPServer, handler_class=HttpHandler, ip="0.0.0.0", port=3000
     # ):
@@ -139,7 +136,8 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format="%(threadName)s %(message)s")
     data_file = set_data_file(set_data_directory())
     data_dict = set_data_dict(data_file)
-    http_server = threading.Thread(target=run_http_server, daemon=True)
+    httpd = HTTPServer(("0.0.0.0", 3000), HttpHandler)
+    http_server = threading.Thread(target=run_http_server, args=(httpd,), daemon=True)
     socket_server = threading.Thread(
         target=run_socket_server,
         args=("0.0.0.0", 5000, data_dict, data_file),
